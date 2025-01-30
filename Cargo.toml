@@ -22,3 +22,4 @@ futures-util = { version = "0.3.31" }
 # Miscellaneous
 jiff = { version = "0.1.28" }
 thiserror = { version = "2.0.11" }
+config = { version = "0.15.7" }

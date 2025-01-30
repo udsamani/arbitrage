@@ -4,7 +4,7 @@ use futures_util::StreamExt;
 use jiff::Timestamp;
 use tokio::io;
 
-use common::{ArbitrageError, ArbitrageResult, Backoff};
+use common::{ArbitrageError, ArbitrageResult, Backoff, Context};
 use tokio_tungstenite::WebSocketStream;
 
 use crate::WsCallback;
@@ -18,6 +18,7 @@ where
     pub callback: C,
     pub heartbeat_millis: u64,
     pub backoff: Backoff,
+    pub context: Context,
 }
 
 #[allow(unused)]
@@ -26,6 +27,7 @@ where
     C: WsCallback,
 {
     pub async fn run(&mut self) -> ArbitrageResult<String> {
+        let context = self.context.clone();
         loop {
             match self.backoff.next() {
                 Some(delay_secs) => {
@@ -87,11 +89,15 @@ where
         S: io::AsyncRead + io::AsyncWrite + Unpin + Send + 'static,
     {
         self.on_connect().await?;
+        let mut app = self.context.app.subscribe();
         let mut num_messages_since_last_heartbeat = 0;
         let mut heartbeat = tokio::time::interval(Duration::from_millis(self.heartbeat_millis));
 
         loop {
             tokio::select! {
+                _ = app.recv() => {
+                    return Err(ArbitrageError::Exit);
+                }
                 result = ws_stream.next() => {
                     match result {
                         Some(result) => {

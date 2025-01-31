@@ -91,19 +91,17 @@ pub struct OkexData {
     pub prev_seq_id: Option<i64>,
     #[serde(rename = "seqId")]
     pub seq_id: i64,
-    pub asks: Vec<OrderBookTop>,
-    pub bids: Vec<OrderBookTop>,
+    pub asks: Vec<OrderBookEntry>,
+    pub bids: Vec<OrderBookEntry>,
 }
 
-#[derive(Clone, Serialize)]
-pub struct OrderBookTop {
-    #[serde(with = "rust_decimal::serde::str")]
+#[derive(Debug, Clone, Serialize)]
+pub struct OrderBookEntry {
     pub price: Decimal,
-    #[serde(with = "rust_decimal::serde::str")]
     pub amount: Decimal,
 }
 
-impl<'de> Deserialize<'de> for OrderBookTop {
+impl<'de> Deserialize<'de> for OrderBookEntry {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -111,13 +109,13 @@ impl<'de> Deserialize<'de> for OrderBookTop {
         struct OrderBookTopVisitor;
 
         impl<'de> Visitor<'de> for OrderBookTopVisitor {
-            type Value = OrderBookTop;
+            type Value = OrderBookEntry;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("an array with four elements")
             }
 
-            fn visit_seq<V>(self, mut seq: V) -> Result<OrderBookTop, V::Error>
+            fn visit_seq<V>(self, mut seq: V) -> Result<OrderBookEntry, V::Error>
             where
                 V: SeqAccess<'de>,
             {
@@ -134,7 +132,7 @@ impl<'de> Deserialize<'de> for OrderBookTop {
                     .map_err(Error::custom)?;
 
 
-                Ok(OrderBookTop {
+                Ok(OrderBookEntry {
                     price,
                     amount,
                 })

@@ -10,3 +10,5 @@ serde_json = { workspace = true }
 config = { workspace = true }
 tokio = { workspace = true }
 log = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }

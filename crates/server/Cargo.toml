@@ -1,0 +1,13 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common = { workspace = true }
+models = { workspace = true }
+wsclient = { workspace = true }
+tokio = { workspace = true }
+log = { workspace = true }
+async-trait = { workspace = true }
+config = { workspace = true }

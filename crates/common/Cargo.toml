@@ -12,3 +12,4 @@ tokio = { workspace = true }
 log = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
+dotenvy = { workspace = true }

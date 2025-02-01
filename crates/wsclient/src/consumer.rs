@@ -4,11 +4,12 @@ use futures_util::StreamExt;
 use jiff::Timestamp;
 use tokio::io;
 
-use common::{ArbitrageError, ArbitrageResult, Backoff, Context};
+use common::{ArbitrageError, ArbitrageResult, Backoff, Context, SpawnResult, Worker};
 use tokio_tungstenite::WebSocketStream;
 
 use crate::WsCallback;
 
+#[derive(Clone)]
 pub struct WsConsumer<C>
 where
     C: WsCallback,
@@ -24,7 +25,7 @@ where
 #[allow(unused)]
 impl<C> WsConsumer<C>
 where
-    C: WsCallback,
+    C: Clone + WsCallback,
 {
     pub async fn run(&mut self) -> ArbitrageResult<String> {
         let context = self.context.clone();
@@ -134,5 +135,19 @@ where
 
     fn on_disconnect(&mut self) -> ArbitrageResult<()> {
         self.callback.on_disconnect()
+    }
+}
+
+
+
+impl<C> Worker for WsConsumer<C>
+where
+    C: Clone + WsCallback + Send + 'static
+{
+    fn spawn(&mut self) -> SpawnResult {
+        let mut consumer = self.clone();
+        tokio::spawn(async move {
+            consumer.run().await
+        })
     }
 }

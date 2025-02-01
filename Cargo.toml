@@ -14,10 +14,11 @@ serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.138"
 
 # Async Dependencies
-async-trait = { version = "0.1.85" }
+async-trait = { version = "0.1.86" }
 tokio-tungstenite = { version = "0.26.1", features = ["native-tls"] }
 tokio = { version = "1.39.0", features = ["full"] }
 futures-util = { version = "0.3.31" }
+futures = { version = "0.3.31" }
 
 # Miscellaneous
 jiff = { version = "0.1.28" }

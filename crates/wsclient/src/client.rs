@@ -1,5 +1,4 @@
-use common::{ArbitrageError, ArbitrageResult, Backoff, Context, SharedRef};
-use tokio::sync::mpsc::{Receiver, Sender};
+use common::{ArbitrageError, ArbitrageResult, Backoff, Context, MpSc, SharedRef};
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::{WsCallback, WsConsumer};
@@ -8,10 +7,9 @@ use crate::{WsCallback, WsConsumer};
 pub struct WsClient {
     ws_url: String,
     connected: SharedRef<bool>,
-    sender: Sender<Message>,
+    mpsc: MpSc<Message>,
     client_id: String,
     heartbeat_millis: u64,
-    _receiver: Option<Receiver<Message>>,
 }
 
 
@@ -20,24 +18,22 @@ impl Clone for WsClient {
         Self {
             ws_url: self.ws_url.clone(),
             connected: self.connected.clone(),
-            sender: self.sender.clone(),
+            mpsc: self.mpsc.clone(),
             client_id: self.client_id.clone(),
             heartbeat_millis: self.heartbeat_millis,
-            _receiver: None,
         }
     }
 }
 
 impl WsClient {
     pub fn new(ws_url: String, heartbeat_millis: u64) -> Self {
-        let (sender, receiver) = tokio::sync::mpsc::channel(100);
+        let mpsc = MpSc::new(100);
         Self {
             ws_url,
-            connected: SharedRef::new(false),
-            sender,
+           connected: SharedRef::new(false),
             client_id: "".to_string(),
             heartbeat_millis,
-            _receiver: Some(receiver),
+            mpsc,
         }
     }
 
@@ -55,7 +51,7 @@ impl WsClient {
     }
 
     pub fn write(&self, message: Message) -> ArbitrageResult<()> {
-        match self.sender.try_send(message) {
+        match self.mpsc.sender.try_send(message) {
             Ok(_) => Ok(()),
             Err(e) => {
                 Err(ArbitrageError::GenericError(format!("failed to send message to ws client: {}", e)))
@@ -71,7 +67,6 @@ impl WsClient {
     where
         C: WsCallback,
     {
-        let receiver = self._receiver.take().unwrap();
         WsConsumer {
             client_id: self.client_id.clone(),
             ws_url: self.ws_url.clone(),
@@ -79,7 +74,7 @@ impl WsClient {
             heartbeat_millis: self.heartbeat_millis,
             backoff: Backoff::default(),
             context,
-            receiver: Some(receiver),
+            mpsc: self.mpsc.clone(),
         }
     }
 }

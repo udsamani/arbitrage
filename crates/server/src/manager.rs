@@ -3,18 +3,20 @@ use std::{cmp::min, collections::HashMap};
 use common::{ArbitrageError, Context, MpSc, Worker};
 use models::{ArbitrageOpportunity, Exchange, ExchangeProduct, InternalMessage, OrderBook, Product};
 use rust_decimal::Decimal;
+use tokio::sync::broadcast::Sender;
 
 #[derive(Clone)]
 pub struct OrderBookManager {
     context: Context,
     order_books: HashMap<ExchangeProduct, OrderBook>,
     producer: MpSc<InternalMessage>,
+    broadcaster: Sender<InternalMessage>,
 }
 
 
 impl OrderBookManager {
-    pub fn new(context: Context, producer: MpSc<InternalMessage>) -> Self {
-        Self { context, order_books: HashMap::new(), producer }
+    pub fn new(context: Context, producer: MpSc<InternalMessage>, broadcaster: Sender<InternalMessage>) -> Self {
+        Self { context, order_books: HashMap::new(), producer, broadcaster }
     }
 
     pub fn check_arbitrage_opportunities(&self, product: &Product) -> Option<ArbitrageOpportunity> {
@@ -90,8 +92,17 @@ impl Worker for OrderBookManager {
                                 let arbitrage_opportunity = order_book_manager.check_arbitrage_opportunities(&product);
                                 if let Some(arbitrage_opportunity) = arbitrage_opportunity {
                                     log::info!("arbitrage opportunity: {:?}", arbitrage_opportunity);
+                                    match order_book_manager.broadcaster.send(InternalMessage::ArbitrageOpportunity(arbitrage_opportunity)) {
+                                        Ok(_) => {}
+                                        Err(e) => {
+                                            log::error!("error sending arbitrage opportunity to broadcaster: {:?}", e);
+                                        }
+                                    }
                                 }
 
+                            }
+                            Some(InternalMessage::ArbitrageOpportunity(_)) => {
+                                log::warn!("received arbitrage opportunity from broadcaster, this should not happen");
                             }
                             None => {
                                 return Err(ArbitrageError::GenericError("receiver closed".to_string()));
@@ -115,12 +126,14 @@ mod tests {
     use models::{Exchange, ExchangeProduct, OrderBookUpdate, Product};
     use rust_decimal::Decimal;
     use rust_decimal_macros::dec;
+    use tokio::sync::broadcast;
     use super::*;
 
     fn setup_order_book_manager(product: Product) -> OrderBookManager {
         let context = Context::from_config(Config::default());
         let producer = MpSc::new(100);
-        let mut order_book_manager = OrderBookManager::new(context, producer);
+        let (broadcaster, _) = broadcast::channel(100);
+        let mut order_book_manager = OrderBookManager::new(context, producer, broadcaster);
 
         // Setup Order Book for Okex
         let okex_order_book = OrderBook::new(&ExchangeProduct { exchange: Exchange::Okex, product: product.clone() });

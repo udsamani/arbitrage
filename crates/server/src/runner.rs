@@ -1,7 +1,8 @@
 use common::{create_config, ArbitrageResult, Context, MpSc, Runner, Workers};
 use config::Config;
+use tokio::sync::broadcast;
 
-use crate::{adapters::{DeribitExchangeAdapter, OkexExchangeAdapter}, manager::OrderBookManager};
+use crate::{adapters::{DeribitExchangeAdapter, OkexExchangeAdapter}, endpoint::Endpoint, manager::OrderBookManager};
 
 pub struct ServerRunner {
     context: Context,
@@ -24,9 +25,9 @@ impl Runner for ServerRunner {
     async fn run(&mut self) -> ArbitrageResult<String> {
         log::info!("starting arbitrage server");
 
-
+        let (broadcaster, _) = broadcast::channel(5000);
         let mut internal_message_producer = MpSc::new(5000);
-        let order_book_manager = OrderBookManager::new(self.context.with_name("order-book-manager"), internal_message_producer.clone_with_receiver());
+        let order_book_manager = OrderBookManager::new(self.context.with_name("order-book-manager"), internal_message_producer.clone_with_receiver(), broadcaster.clone());
 
         let mut workers = Workers::new(self.context.with_name("arbitrage-workers"), 0);
 
@@ -41,6 +42,10 @@ impl Runner for ServerRunner {
         let deribit_callback = deribit_adapter.callback(internal_message_producer.sender());
 
         workers.add_worker(deribit_adapter.worker(deribit_callback));
+
+
+        let endpoint = Endpoint::new(self.context.clone(), broadcaster);
+        workers.add_worker(Box::new(endpoint));
 
         workers.run().await
     }

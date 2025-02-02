@@ -59,6 +59,10 @@ impl Workers {
     pub fn add_worker(&mut self, worker: WorkerRef) {
         self.workers.push(worker);
     }
+
+    pub async fn run(&mut self) -> ArbitrageResult<String> {
+        self.spawn().await.unwrap()
+    }
 }
 
 

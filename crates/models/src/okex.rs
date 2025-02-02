@@ -26,7 +26,7 @@ pub enum OkexEvent {
     Error,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OkexArg {
     pub channel: String,
     #[serde(rename = "instId")]
@@ -35,7 +35,7 @@ pub struct OkexArg {
 
 
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OkexResponse {
     pub event: OkexEvent,
     #[serde(rename = "connId")]
@@ -45,7 +45,7 @@ pub struct OkexResponse {
 }
 
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum OkexResponseData {
     Subscribe(OkexSubscribeResponse),
@@ -53,13 +53,13 @@ pub enum OkexResponseData {
 }
 
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OkexSubscribeResponse {
     pub arg: OkexArg,
 }
 
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OkexError {
     pub code: String,
     #[serde(rename = "msg")]
@@ -74,7 +74,7 @@ pub enum OkexAction {
 }
 
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OkexMessage {
     pub action: OkexAction,
     pub arg: OkexArg,
@@ -82,15 +82,10 @@ pub struct OkexMessage {
 }
 
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OkexData {
-    #[serde(rename = "ts")]
+    #[serde(rename = "ts", deserialize_with = "deserialize_timestamp")]
     pub timestamp: u64,
-    pub checksum: i64,
-    #[serde(rename = "prevSeqId")]
-    pub prev_seq_id: Option<i64>,
-    #[serde(rename = "seqId")]
-    pub seq_id: i64,
     pub asks: Vec<OrderBookEntry>,
     pub bids: Vec<OrderBookEntry>,
 }
@@ -132,6 +127,9 @@ impl<'de> Deserialize<'de> for OrderBookEntry {
                     .map_err(Error::custom)?;
 
 
+                // Ignore any additional elements
+                while (seq.next_element::<String>()?).is_some() {}
+
                 Ok(OrderBookEntry {
                     price,
                     amount,
@@ -141,6 +139,15 @@ impl<'de> Deserialize<'de> for OrderBookEntry {
 
         deserializer.deserialize_seq(OrderBookTopVisitor)
     }
+}
+
+
+fn deserialize_timestamp<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let timestamp: String = String::deserialize(deserializer)?;
+    timestamp.parse::<u64>().map_err(Error::custom)
 }
 
 
@@ -227,12 +234,12 @@ mod tests {
             },
             "data": [
                 {
-                    "ts": 1234567890,
+                    "ts": "1234567890",
                     "checksum": 1234567890,
                     "prevSeqId": null,
                     "seqId": 1234567890,
-                    "asks": [["84000.00000000", "1.00000000"], ["83000.00000000", "1.00000000"]],
-                    "bids": [["84000.00000000", "1.00000000"], ["83000.00000000", "1.00000000"]]
+                    "asks": [["84000.00000000", "1.00000000", "0", "1.0"], ["83000.00000000", "1.00000000", "0", "1.0"]],
+                    "bids": [["84000.00000000", "1.00000000", "0", "1.0"], ["83000.00000000", "1.00000000", "0", "1.0"]]
                 }
             ]
         });
@@ -244,9 +251,6 @@ mod tests {
         assert_eq!(message.data.len(), 1);
         let data = message.data[0].clone();
         assert_eq!(data.timestamp, 1234567890);
-        assert_eq!(data.checksum, 1234567890);
-        assert_eq!(data.prev_seq_id, None);
-        assert_eq!(data.seq_id, 1234567890);
         assert_eq!(data.asks.len(), 2);
         assert_eq!(data.bids.len(), 2);
         assert_eq!(data.asks[0].price, Decimal::from(84000));
@@ -268,10 +272,7 @@ mod tests {
             },
             "data": [
                 {
-                    "ts": 1234567890,
-                    "checksum": 1234567890,
-                    "prevSeqId": 1234567890,
-                    "seqId": 1234567890,
+                    "ts": "1234567890",
                     "asks": [["84000.00000000", "1.00000000"], ["83000.00000000", "1.00000000"]],
                     "bids": [["84000.00000000", "1.00000000"], ["83000.00000000", "1.00000000"]]
                 }
@@ -285,9 +286,6 @@ mod tests {
         assert_eq!(message.data.len(), 1);
         let data = message.data[0].clone();
         assert_eq!(data.timestamp, 1234567890);
-        assert_eq!(data.checksum, 1234567890);
-        assert_eq!(data.prev_seq_id, Some(1234567890));
-        assert_eq!(data.seq_id, 1234567890);
         assert_eq!(data.asks.len(), 2);
         assert_eq!(data.bids.len(), 2);
         assert_eq!(data.asks[0].price, Decimal::from(84000));

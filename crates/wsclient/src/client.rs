@@ -74,7 +74,7 @@ impl WsClient {
             heartbeat_millis: self.heartbeat_millis,
             backoff: Backoff::default(),
             context,
-            mpsc: self.mpsc.clone(),
+            mpsc: self.mpsc.clone_with_receiver(),
         }
     }
 }

@@ -152,7 +152,7 @@ where
                 }
                 _ = heartbeat.tick() => {
                     self.callback.on_heartbeat();
-                    log::info!("{} received {} messages since last heartbeat", self.client_id, num_messages_since_last_heartbeat);
+                    log::info!("{} received {} messages since last heartbeat", self.context.name, num_messages_since_last_heartbeat);
                     num_messages_since_last_heartbeat = 0;
                 }
             }

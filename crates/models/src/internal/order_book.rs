@@ -16,6 +16,14 @@ impl OrderBook {
         Self { exchange_product: exchange_product.clone(), bids: BTreeMap::new(), asks: BTreeMap::new() }
     }
 
+    pub fn best_bid(&self) -> Option<(Decimal, Decimal)> {
+        self.bids.last_key_value().map(|(price, size)| (*price, *size))
+    }
+
+    pub fn best_ask(&self) -> Option<(Decimal, Decimal)> {
+        self.asks.first_key_value().map(|(price, size)| (*price, *size))
+    }
+
     pub fn add_bid(&mut self, price: Decimal, size: Decimal) {
         if size.is_zero() {
             self.bids.remove(&price);

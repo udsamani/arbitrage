@@ -8,7 +8,6 @@ pub enum InternalMessage {
     OrderBookUpdate(OrderBookUpdate),
 }
 
-
 #[derive(Debug, Clone)]
 pub struct OrderBookUpdate {
     pub exchange_product: ExchangeProduct,
@@ -75,4 +74,15 @@ impl From<OkexMessage> for InternalMessage {
             }
         }
     }
+}
+
+
+#[derive(Debug, Clone)]
+pub struct ArbitrageOpportunity {
+    pub product: Product,
+    pub buy_exchange: Exchange,
+    pub sell_exchange: Exchange,
+    pub buy_price: Decimal,
+    pub sell_price: Decimal,
+    pub size: Decimal,
 }

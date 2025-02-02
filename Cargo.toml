@@ -30,3 +30,4 @@ rust_decimal = { version = "1.36.0" }
 dotenvy = { version = "0.15.7" }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 chrono = { version = "0.4.39" }
+rust_decimal_macros = { version = "1.36.0" }

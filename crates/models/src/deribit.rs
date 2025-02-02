@@ -11,6 +11,12 @@ pub struct DeribitRequest {
     pub params: DeribitRequestParams,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeribitResponse {
+    pub jsonrpc: String,
+    pub id: String,
+    pub result: Vec<String>
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DeribitRequestMethod {
@@ -136,6 +142,21 @@ mod tests {
         });
 
         assert_eq!(serialized, expected);
+    }
+
+    #[test]
+    fn test_serialize_response() {
+        let response = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": "1",
+            "result": ["book.BTC-10MAY24-66000-C.none.20.100ms"]
+        });
+
+        let deserialized = serde_json::from_value::<DeribitResponse>(response).unwrap();
+
+        assert_eq!(deserialized.jsonrpc, "2.0");
+        assert_eq!(deserialized.id, "1");
+        assert_eq!(deserialized.result, vec!["book.BTC-10MAY24-66000-C.none.20.100ms"]);
     }
 
     #[test  ]

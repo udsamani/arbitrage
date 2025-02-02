@@ -4,7 +4,7 @@ use futures_util::{SinkExt, StreamExt};
 use jiff::Timestamp;
 use tokio::{io, sync::mpsc::Receiver};
 
-use common::{ArbitrageError, ArbitrageResult, Backoff, Context, SpawnResult, Worker};
+use common::{ArbitrageError, ArbitrageResult, Backoff, Context, MpSc, SpawnResult, Worker};
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
 use crate::WsCallback;
@@ -19,7 +19,7 @@ where
     pub heartbeat_millis: u64,
     pub backoff: Backoff,
     pub context: Context,
-    pub receiver: Option<Receiver<Message>>,
+    pub mpsc: MpSc<Message>,
 }
 
 impl<C> Clone for WsConsumer<C>
@@ -34,7 +34,7 @@ where
             heartbeat_millis: self.heartbeat_millis,
             backoff: self.backoff.clone(),
             context: self.context.clone(),
-            receiver: None
+            mpsc: self.mpsc.clone(),
         }
     }
 }
@@ -46,7 +46,7 @@ where
 {
     pub async fn run(&mut self) -> ArbitrageResult<String> {
         let context = self.context.clone();
-        let mut receiver = self.receiver.take().unwrap();
+        let mut receiver = self.mpsc.receiver().unwrap();
         loop {
             match self.backoff.next() {
                 Some(delay_secs) => {
@@ -177,6 +177,7 @@ where
 {
     fn spawn(&mut self) -> SpawnResult {
         let mut consumer = self.clone();
+        consumer.mpsc = self.mpsc.clone_with_receiver();
         tokio::spawn(async move {
             consumer.run().await
         })

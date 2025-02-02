@@ -3,6 +3,7 @@ use runner::ServerRunner;
 
 mod adapters;
 mod runner;
+mod manager;
 
 
 fn main() {

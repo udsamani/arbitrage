@@ -3,6 +3,16 @@ use std::str::FromStr;
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
 
+use super::Exchange;
+
+
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct ExchangeProduct {
+    pub product: Product,
+    pub exchange: Exchange,
+}
+
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum Product {
     Option {

@@ -19,9 +19,3 @@ pub enum Exchange {
     Okex,
     Deribit,
 }
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub enum Side {
-    Bid,
-    Ask,
-}

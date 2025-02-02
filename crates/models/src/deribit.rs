@@ -60,7 +60,6 @@ pub enum DeribitChannelData {
     OrderBook(DeribitOrderBook),
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeribitOrderBook {
     pub instrument_name: String,

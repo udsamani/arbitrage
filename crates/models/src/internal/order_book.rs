@@ -1,29 +1,43 @@
 use std::collections::BTreeMap;
-
 use rust_decimal::Decimal;
-
-use super::{Exchange, Product};
+use super::{ExchangeProduct, OrderBookUpdate};
 
 
 #[derive(Debug, Clone)]
 pub struct OrderBook {
-    pub product: Product,
+    pub exchange_product: ExchangeProduct,
     pub bids: BTreeMap<Decimal, Decimal>,
     pub asks: BTreeMap<Decimal, Decimal>,
-    pub exchange: Exchange,
 }
 
 
 impl OrderBook {
-    pub fn new(product: Product, exchange: Exchange) -> Self {
-        Self { product, bids: BTreeMap::new(), asks: BTreeMap::new(), exchange }
+    pub fn new(exchange_product: &ExchangeProduct) -> Self {
+        Self { exchange_product: exchange_product.clone(), bids: BTreeMap::new(), asks: BTreeMap::new() }
     }
 
     pub fn add_bid(&mut self, price: Decimal, size: Decimal) {
-        self.bids.insert(price, size);
+        if size.is_zero() {
+            self.bids.remove(&price);
+        } else {
+            self.bids.insert(price, size);
+        }
     }
 
     pub fn add_ask(&mut self, price: Decimal, size: Decimal) {
-        self.asks.insert(price, size);
+        if size.is_zero() {
+            self.asks.remove(&price);
+        } else {
+            self.asks.insert(price, size);
+        }
+    }
+
+    pub fn update(&mut self, order_book_update: OrderBookUpdate) {
+        for (price, size) in order_book_update.bids {
+            self.add_bid(price, size);
+        }
+        for (price, size) in order_book_update.asks {
+            self.add_ask(price, size);
+        }
     }
 }

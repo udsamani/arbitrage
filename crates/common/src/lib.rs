@@ -6,6 +6,7 @@ mod runner;
 mod worker;
 mod utils;
 mod mpsc;
+mod async_shared;
 
 pub use backoff::*;
 pub use errors::*;
@@ -15,3 +16,4 @@ pub use runner::*;
 pub use worker::*;
 pub use utils::*;
 pub use mpsc::*;
+pub use async_shared::*;

@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
 use common::{ArbitrageError, ArbitrageResult, Context, WorkerRef};
-use models::{deribit::{DeribitChannelMessage, DeribitRequest, DeribitRequestMethod, DeribitRequestParams, DeribitResponse}, ProductSubscription};
+use models::{deribit::{DeribitChannelMessage, DeribitRequest, DeribitRequestMethod, DeribitRequestParams, DeribitResponse}, InternalMessage, ProductSubscription};
+use tokio::sync::mpsc::Sender;
 use tokio_tungstenite::tungstenite::{Message, Utf8Bytes};
 use wsclient::{WsCallback, WsClient};
 
@@ -31,12 +32,13 @@ impl DeribitExchangeAdapter {
         Ok(Self { context, ws_client, products_to_subscribe })
     }
 
-    pub fn callback(&self) -> DeribitExchangeCallback {
+    pub fn callback(&self, internal_message_producer: Sender<InternalMessage>) -> DeribitExchangeCallback {
         DeribitExchangeCallback {
             _context: self.context.clone(),
             ws_client: self.ws_client.clone(),
             products_to_subscribe: self.products_to_subscribe.clone(),
             inflight_subscription_requests: HashSet::new(),
+            internal_message_producer,
         }
     }
 
@@ -56,7 +58,8 @@ pub struct DeribitExchangeCallback {
     _context: Context,
     ws_client: WsClient,
     products_to_subscribe: HashSet<ProductSubscription>,
-    inflight_subscription_requests: HashSet<String>
+    inflight_subscription_requests: HashSet<String>,
+    internal_message_producer: Sender<InternalMessage>,
 }
 
 
@@ -98,7 +101,12 @@ impl WsCallback for DeribitExchangeCallback {
                         let result = serde_json::from_str::<DeribitChannelMessage>(&text);
                         match result {
                             Ok(channel_message) => {
-                                log::info!("received deribit channel message: {:?}", channel_message);
+                                match self.internal_message_producer.send(channel_message.params.data.into()).await {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        log::error!("error sending internal message: {} hence the message is dropped", e);
+                                    }
+                                }
                             }
                             Err(e) => {
                                 log::error!("error parsing deribit channel message: {}", e);

@@ -4,6 +4,8 @@ use runner::ServerRunner;
 mod adapters;
 mod runner;
 mod manager;
+mod endpoint;
+mod websocket;
 
 
 fn main() {

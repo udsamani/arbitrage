@@ -1,14 +1,17 @@
 use rust_decimal::Decimal;
+use serde::Serialize;
 
 use crate::{deribit::DeribitChannelData, okex::{OkexAction, OkexMessage}};
 
 use super::{Exchange, ExchangeProduct, Product};
 
+#[derive(Debug, Clone, Serialize)]
 pub enum InternalMessage {
     OrderBookUpdate(OrderBookUpdate),
+    ArbitrageOpportunity(ArbitrageOpportunity),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct OrderBookUpdate {
     pub exchange_product: ExchangeProduct,
     pub bids: Vec<(Decimal, Decimal)>,
@@ -77,7 +80,7 @@ impl From<OkexMessage> for InternalMessage {
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ArbitrageOpportunity {
     pub product: Product,
     pub buy_exchange: Exchange,

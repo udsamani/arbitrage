@@ -2,18 +2,19 @@ use std::str::FromStr;
 
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
+use serde::Serialize;
 
 use super::Exchange;
 
 
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize)]
 pub struct ExchangeProduct {
     pub product: Product,
     pub exchange: Exchange,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize)]
 pub enum Product {
     Option {
         underlying: CryptoAsset,
@@ -25,19 +26,19 @@ pub enum Product {
 }
 
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize)]
 pub enum OptionType {
     Call,
     Put,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize)]
 pub enum CryptoAsset {
     BTC,
     ETH
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize)]
 pub enum SettlementAsset {
     USD,
 }

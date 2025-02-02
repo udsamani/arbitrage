@@ -23,9 +23,10 @@ futures-util = { version = "0.3.31" }
 futures = { version = "0.3.31" }
 
 # Miscellaneous
-jiff = { version = "0.1.28" }
+jiff = { version = "0.1.29" }
 thiserror = { version = "2.0.11" }
 config = { version = "0.15.7" }
 rust_decimal = { version = "1.36.0" }
 dotenvy = { version = "0.15.7" }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+chrono = { version = "0.4.39" }

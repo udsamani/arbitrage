@@ -1,15 +1,14 @@
 use std::time::Duration;
-use futures_util::StreamExt;
+use futures_util::{SinkExt, StreamExt};
 
 use jiff::Timestamp;
-use tokio::io;
+use tokio::{io, sync::mpsc::Receiver};
 
 use common::{ArbitrageError, ArbitrageResult, Backoff, Context, SpawnResult, Worker};
-use tokio_tungstenite::WebSocketStream;
+use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
 use crate::WsCallback;
 
-#[derive(Clone)]
 pub struct WsConsumer<C>
 where
     C: WsCallback,
@@ -20,6 +19,24 @@ where
     pub heartbeat_millis: u64,
     pub backoff: Backoff,
     pub context: Context,
+    pub receiver: Option<Receiver<Message>>,
+}
+
+impl<C> Clone for WsConsumer<C>
+where
+    C: Clone + WsCallback,
+{
+    fn clone(&self) -> Self {
+        Self {
+            client_id: self.client_id.clone(),
+            ws_url: self.ws_url.clone(),
+            callback: self.callback.clone(),
+            heartbeat_millis: self.heartbeat_millis,
+            backoff: self.backoff.clone(),
+            context: self.context.clone(),
+            receiver: None
+        }
+    }
 }
 
 #[allow(unused)]
@@ -29,6 +46,7 @@ where
 {
     pub async fn run(&mut self) -> ArbitrageResult<String> {
         let context = self.context.clone();
+        let mut receiver = self.receiver.take().unwrap();
         loop {
             match self.backoff.next() {
                 Some(delay_secs) => {
@@ -61,7 +79,7 @@ where
                 }
             };
 
-            let stream_result = self.stream(ws_stream).await;
+            let stream_result = self.stream(&mut receiver, ws_stream).await;
             self.on_disconnect()?;
 
             match stream_result {
@@ -85,7 +103,7 @@ where
         }
     }
 
-    async fn stream<S>(&mut self, mut ws_stream: WebSocketStream<S>) -> ArbitrageResult<()>
+    async fn stream<S>(&mut self, receiver: &mut Receiver<Message>, mut ws_stream: WebSocketStream<S>) -> ArbitrageResult<()>
     where
         S: io::AsyncRead + io::AsyncWrite + Unpin + Send + 'static,
     {
@@ -115,6 +133,19 @@ where
                         }
                         None => {
                             return Err(ArbitrageError::GenericError("websocket stream closed".to_string()));
+                        }
+                    }
+                }
+                result = receiver.recv() => {
+                    match result {
+                        Some(message) => {
+                            if let Err(e) = ws_stream.send(message).await {
+                                return Err(ArbitrageError::GenericError(format!("error while sending message to websocket: {}", e)));
+                            }
+                            log::debug!("sent message to websocket: {}", self.ws_url);
+                        }
+                        None => {
+                            return Err(ArbitrageError::GenericError("receiver closed".to_string()));
                         }
                     }
                 }

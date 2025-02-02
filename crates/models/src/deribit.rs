@@ -35,7 +35,7 @@ pub enum DeribitRequestParams {
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DerbitChannelMessage {
+pub struct DeribitChannelMessage {
     pub jsonrpc: String,
     pub method: DeribitResponseMethod,
     pub params: DerbitResponseParams,
@@ -180,7 +180,7 @@ mod tests {
             }
         });
 
-        let deserialized: DerbitChannelMessage = serde_json::from_value(json).unwrap();
+        let deserialized: DeribitChannelMessage = serde_json::from_value(json).unwrap();
 
         assert_eq!(deserialized.params.channel, "book.BTC-10MAY24-66000-C.none.20.100ms");
         assert_eq!(deserialized.method, DeribitResponseMethod::Subscription);

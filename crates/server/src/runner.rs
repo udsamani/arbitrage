@@ -1,7 +1,7 @@
 use common::{create_config, ArbitrageResult, Context, Runner, Workers};
 use config::Config;
 
-use crate::adapters::OkexExchangeAdapter;
+use crate::adapters::{DeribitExchangeAdapter, OkexExchangeAdapter};
 
 pub struct ServerRunner {
     context: Context,
@@ -28,7 +28,14 @@ impl Runner for ServerRunner {
         let okex_callback = okex_adapter.callback();
 
         let mut workers = Workers::new(self.context.with_name("arbitrage-workers"), 0);
+
         workers.add_worker(okex_adapter.worker(okex_callback));
+
+        let mut deribit_adapter = DeribitExchangeAdapter::new(self.context.clone())?;
+        let deribit_callback = deribit_adapter.callback();
+
+        workers.add_worker(deribit_adapter.worker(deribit_callback));
+
         workers.run().await
     }
 

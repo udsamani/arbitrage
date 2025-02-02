@@ -5,6 +5,8 @@ use models::{okex::{OkexArg, OkexMessage, OkexOperation, OkexRequest, OkexRespon
 use tokio_tungstenite::tungstenite::{Message, Utf8Bytes};
 use wsclient::{WsCallback, WsClient};
 
+use super::get_products_to_subscibe;
+
 pub struct OkexExchangeAdapter {
     context: Context,
     ws_client: WsClient,
@@ -12,16 +14,6 @@ pub struct OkexExchangeAdapter {
 }
 
 
-pub fn get_products_to_subscibe(products_to_subscribe: &str) -> HashSet<ProductSubscription> {
-    let mut products = HashSet::new();
-    for product in products_to_subscribe.split(',') {
-        products.insert(ProductSubscription {
-            product_id: product.to_string(),
-            subscribed: false,
-        });
-    }
-    products
-}
 
 impl OkexExchangeAdapter {
     /// Create a new OkexExchangeAdapter
@@ -76,6 +68,7 @@ impl OkexExchangeCallback {
         for product in self.products_to_subscribe.iter() {
             if !product.subscribed && !self.inflight_subscription_requests.contains(&product.product_id) {
                 self.inflight_subscription_requests.insert(product.product_id.clone());
+                //TODO: add support for other channels instead of hardcoding books
                 args.push(OkexArg{
                     channel: "books".to_string(),
                     instance_id: product.product_id.clone(),

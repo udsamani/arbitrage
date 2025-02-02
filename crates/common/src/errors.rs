@@ -14,4 +14,13 @@ pub enum ArbitrageError {
     Exit,
     #[error("{0}")]
     GenericError(String),
+    #[error("{0}")]
+    ConfigError(config::ConfigError),
+}
+
+
+impl From<config::ConfigError> for ArbitrageError {
+    fn from(error: config::ConfigError) -> Self {
+        ArbitrageError::ConfigError(error)
+    }
 }

@@ -27,6 +27,7 @@ where
     C: Clone + WsCallback,
 {
     fn clone(&self) -> Self {
+
         Self {
             client_id: self.client_id.clone(),
             ws_url: self.ws_url.clone(),

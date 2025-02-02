@@ -44,7 +44,7 @@ impl OkexExchangeAdapter {
 
     pub fn callback(&self) -> OkexExchangeCallback {
         OkexExchangeCallback {
-            context: self.context.clone(),
+            _context: self.context.clone(),
             ws_client: self.ws_client.clone(),
             products_to_subscribe: self.products_to_subscribe.clone(),
             inflight_subscription_requests: HashSet::new(),
@@ -61,10 +61,9 @@ impl OkexExchangeAdapter {
 
 /// Implements the WsCallback for the Okex exchange.
 /// This is used to handle the incoming messages from the Okex exchange.
-#[allow(unused)]
 #[derive(Clone)]
 pub struct OkexExchangeCallback {
-    context: Context,
+    _context: Context,
     ws_client: WsClient,
     products_to_subscribe: HashSet<ProductSubscription>,
     inflight_subscription_requests: HashSet<String>,
